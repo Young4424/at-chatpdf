@@ -1,6 +1,11 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+__import__('pysqlite3')
+import sys
+import sqlite3
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
