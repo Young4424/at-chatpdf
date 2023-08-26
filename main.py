@@ -3,10 +3,12 @@ load_dotenv()
 
 
 # 로컬에서 돌릴 때는 지워야 함
+
 __import__('pysqlite3')
 import sys
 import sqlite3
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 
 from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -14,6 +16,7 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import OpenAIEmbeddings
 
 from langchain.chat_models import ChatOpenAI
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 from langchain.chains import RetrievalQA
 import streamlit as st
@@ -69,7 +72,19 @@ if uploaded_file is not None:
     # load it into Chroma
     # export HNSWLIB_NO_NATIVE=1 해야 함
     db = Chroma.from_documents(texts, embeddings_model)
-
+    
+    
+    # stream을 받아 줄 Handler 만들기
+    from langchain.callbacks.base import BaseCallbackHandler
+    class StreamHandler(BaseCallbackHandler):
+        def __init__ (self, container, initial_text = ""):
+            self.container = container
+            self.text = initial_text
+            
+        def on_llm_new_token(self, token: str, **kwargs) -> None:
+            self.text += token
+            self.container.markdown(self.text)
+    
 
     # Question
     st.header('PDF에게 질문해주세요!')
@@ -77,9 +92,10 @@ if uploaded_file is not None:
 
     if st.button('질문하기'):
         with st.spinner('Wait for it...'):
-            
-            llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature = 0)
+            chat_box = st.empty()
+            stream_handler = StreamHandler(chat_box)
+            llm = ChatOpenAI(model_name='gpt-3.5-turbo', temperature = 0,streaming=True, callbacks=[stream_handler])
             qa_chain = RetrievalQA.from_chain_type(llm, retriever=db.as_retriever())
-            result = qa_chain({'query': question})
-            st.write(result['result'])
+            qa_chain({'query': question})
+            
 
