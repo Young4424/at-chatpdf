@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+
+# 로컬에서 돌릴 때는 지워야 함
 __import__('pysqlite3')
 import sys
 import sqlite3
@@ -19,9 +21,16 @@ import streamlit as st
 import tempfile
 import os
 
+from streamlit_extras.buy_me_a_coffee import button
+button(username='rladydgnjv',floating = True, width=221)
+
+
+
 # 제목
 st.title("ChatPDF")
 st.write('---')
+
+
 
 # 파일 업로드
 uploaded_file = st.file_uploader('PDF 파일을 업로드해주세요.',type=['pdf'])
